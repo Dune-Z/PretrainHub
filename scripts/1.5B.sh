@@ -3,4 +3,5 @@ export WANDB_API_KEY=d61cd005c38e0e1e27d921c951303410316ac718
 wandb login --relogin $WANDB_API_KEY
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 src.train \
     --config-path ../recipes/runs \
-    --config-name 1.5B
+    --config-name 1.5B \
+    trainer.hub_model_id=1.5b-adamw

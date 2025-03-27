@@ -13,17 +13,19 @@ trainer:
   output_dir: checkpoints/debug
   per_device_train_batch_size: 8
   gradient_accumulation_steps: 4
-  learning_rate: 1e-5
-  adam_beta1: 0.95
-  adam_beta2: 0.995
+  learning_rate: 4e-3
+  weight_decay: 0.1
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-15
   num_train_epochs: 1
-  max_steps: 40000
+  max_steps: 200000
   lr_scheduler_type: cosine_with_min_lr
   lr_scheduler_kwargs:
-    min_lr_rate: 0.1
-  warmup_ratio: 0.05
+    min_lr: 0
+  warmup_steps: 1000
   logging_steps: 1
-  save_steps: 1000
+  save_steps: 10000
   seed: 42
   bf16: true
   deepspeed: /wang_ssd/yifeizuo/PretrainHub/recipes/deepspeed/zero3.json
@@ -31,6 +33,8 @@ trainer:
   report_to: wandb
   run_name: debug
   resume_from_checkpoint: null
+  hub_model_id: null
+  hub_strategy: end
 task:
   tokenizer_name: meta-llama/Meta-Llama-3-8B
   sequence_length: 4096
