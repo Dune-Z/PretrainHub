@@ -99,7 +99,6 @@ def train(cfg: DictConfig):
     model = model_provider(cfg.model, tokenizer)
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"TRAINABLE PARAMETERS: {trainable_params / 1e9:.4f}B")
-    exit()
 
     trainer = transformers.Trainer(
         model=model,
