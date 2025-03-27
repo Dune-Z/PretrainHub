@@ -1,15 +1,38 @@
 import os
+from collections import deque
 from datasets import load_dataset
 from transformers import AutoTokenizer
 from tokenizers.processors import TemplateProcessing
 
 
-def group_into_chunks(tokenized_data, chunk_size):
-    pass
+class TokenBuffer:
+    def __init__(self):
+        self.buffer = deque()
+    
+    def add(self, tokens):
+        self.buffer.extend(tokens)
+
+    def get(self):
+        tokens = list(self.buffer)
+        self.buffer.clear()
+        return tokens
 
 
-def tokenize_and_save(config_card):
-    # dataset = load_dataset("mlfoundations/dclm-baseline-1.0", split=config_card["split"])
+def group_tokens_into_chunks(tokenized_data, sequence_length, token_buffer: TokenBuffer):
+    tokens = token_buffer.get()
+    for sample in tokenized_data:
+        tokens.extend(sample)
+    
+    total_tokens = len(tokens)
+    num_full_chunks = total_tokens // sequence_length
+    truncated_tokens = tokens[:num_full_chunks * sequence_length]
+    token_buffer.add(truncated_tokens)
+    chunk_tokens = tokens[:num_full_chunks * sequence_length]
+    chunk_tokens = [chunk_tokens[i:i+sequence_length] for i in range(0, len(chunk_tokens), sequence_length)]
+    return {"input_ids": chunk_tokens}
+
+
+def dataset_provider(config_card, sequence_length=4096):
     dataset = load_dataset(
         config_card["dataset_path"],
         name=config_card.get("subset", None),
@@ -28,22 +51,20 @@ def tokenize_and_save(config_card):
         ],
     ) 
     tokenized_dataset = dataset.map(
-        lambda examples: tokenizer(examples[config_card["text_column"]])['input_ids'],
+        lambda examples: tokenizer(examples[config_card["text_column"]]),
         batched=False,
         remove_columns=dataset.column_names,
     )
-    for t in tokenized_dataset.iter(batch_size=4):
-        pass
+    tokenized_dataset = tokenized_dataset.remove_columns("attention_mask")
+    token_buffer = TokenBuffer()
+    tokenized_dataset = tokenized_dataset.map(
+        lambda examples: group_tokens_into_chunks(examples['input_ids'], sequence_length, token_buffer),
+        batched=True,
+    )
+    return tokenized_dataset
     
     
 if __name__ == '__main__':
-    config_card = {
-        "model_name": "meta-llama/Meta-Llama-3-8B",
-        "dataset_path": "allenai/c4",
-        "subset": "en",
-        "split": "train",
-        "text_column": "text",
-    }
     config_card = {
         "model_name": "meta-llama/Meta-Llama-3-8B",
         "dataset_path": "mlfoundations/dclm-baseline-1.0",
@@ -51,5 +72,10 @@ if __name__ == '__main__':
         "text_column": "text",
         "streaming": True
     }
-    tokenize_and_save(config_card)
+    dataset = dataset_provider(config_card)
+    for sample in dataset.iter(batch_size=128):
+        print(sample.keys())
+        print(len(sample["input_ids"]))
+        print(len(sample["input_ids"][0]))
+        breakpoint()
 

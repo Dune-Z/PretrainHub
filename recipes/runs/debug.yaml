@@ -1,0 +1,40 @@
+model:
+  vocab_size: 128256
+  hidden_size: 1024
+  intermediate_size: 4096
+  num_hidden_layers: 12
+  num_attention_heads: 16
+  num_key_value_heads: 16
+  max_position_embeddings: 4096
+  _attn_implementation: flash_attention_2
+  bos_token_id: 128000
+  eos_token_id: 128001
+trainer:
+  output_dir: checkpoints/debug
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 1e-4
+  adam_beta1: 0.95
+  adam_beta2: 0.995
+  num_train_epochs: 1
+  max_steps: 1000
+  lr_scheduler_type: cosine_with_min_lr
+  lr_scheduler_kwargs:
+    min_lr_rate: 0.1
+  warmup_ratio: 0.05
+  logging_steps: 1
+  save_steps: 1000
+  seed: 42
+  bf16: true
+  deepspeed: /wang_ssd/yifeizuo/PretrainHub/recipes/deepspeed/zero3.json
+  optim: adamw_torch_fused
+  report_to: wandb
+  run_name: debug
+  resume_from_checkpoint: null
+task:
+  tokenizer_name: meta-llama/Meta-Llama-3-8B
+  sequence_length: 4096
+  dataset:
+    path: mlfoundations/dclm-baseline-1.0
+    split: train
+    streaming: true
