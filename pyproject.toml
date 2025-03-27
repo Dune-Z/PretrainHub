@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "PretrainHub"
+version = "1.0.0"
+description = "Framework for model training and evaluation"
+
+readme = "README.md"
+requires-python = ">=3.11"
+# license = { file = "LICENSE.txt" }
+keywords = ["sample", "setuptools", "development"]
+authors = [{ name = "Yifei Zuo", email = "yifeizuo2029@u.northwestern.edu" }]
+
+maintainers = [
+#   { name = "A. Great Maintainer", email = "maintainer@example.com" },
+] # TODO: Add maintainers
+
+dependencies = [
+    "transformers",
+    "datasets",
+    "accelerate",
+    "deepspeed",
+    "wandb",
+    "peft",
+    "matplotlib",
+    "tensordict",
+    "hydra-core",
+    "zstandard",
+]
+
+
+[project.urls]
+"Homepage" = "https://github.com/Dune-Z/BRiTER"
+
+[project.scripts]
+
+[tool.setuptools]
