@@ -11,7 +11,7 @@ model:
   eos_token_id: 128001
   torch_dtype: bfloat16
 trainer:
-  output_dir: checkpoints/1.5B-A-4e-3-WM1000-STEP200000-BZ256-SEQ4096
+  output_dir: checkpoints/1.5B-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
   per_device_train_batch_size: 8
   gradient_accumulation_steps: 4
   learning_rate: 4e-3
