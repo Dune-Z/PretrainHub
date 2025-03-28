@@ -8,4 +8,5 @@ wandb login --relogin $WANDB_API_KEY
 
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 --master_port=$PORT1 src.train \
     --config-path ../recipes/runs \
-    --config-name 1.5B
+    --config-name 1.5B \
+    trainer.deepspeed=recipes/deepspeed/zero3.json
