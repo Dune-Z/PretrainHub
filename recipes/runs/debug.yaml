@@ -1,43 +1,43 @@
 model:
-  vocab_size: 128256
-  hidden_size: 1024
-  intermediate_size: 4096
-  num_hidden_layers: 12
+  vocab_size: 32000
+  hidden_size: 512
+  intermediate_size: 2048
+  num_hidden_layers: 4
   num_attention_heads: 16
   num_key_value_heads: 16
   max_position_embeddings: 4096
   _attn_implementation: flash_attention_2
-  bos_token_id: 128000
-  eos_token_id: 128001
+  bos_token_id: 1
+  eos_token_id: 2
   torch_dtype: bfloat16
 trainer:
-  output_dir: checkpoints/debug
-  per_device_train_batch_size: 4
-  gradient_accumulation_steps: 8
-  learning_rate: 4e-3
+  output_dir: checkpoints/50M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
+  per_device_train_batch_size: 16
+  gradient_accumulation_steps: 2
+  learning_rate: 2e-3
   weight_decay: 0.1
   adam_beta1: 0.9
   adam_beta2: 0.95
   adam_epsilon: 1e-15
   num_train_epochs: 1
-  max_steps: 20000
+  max_steps: 200000
   lr_scheduler_type: cosine_with_min_lr
   lr_scheduler_kwargs:
     min_lr: 0
   warmup_steps: 1000
   logging_steps: 1
-  save_steps: 10000
+  save_steps: 100
   seed: 42
   bf16: true
   deepspeed: /wang_ssd/yifeizuo/PretrainHub/recipes/deepspeed/zero3.json
   optim: adamw_torch_fused
   report_to: wandb
-  run_name: 0.5B-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
+  run_name: 50M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
   resume_from_checkpoint: null
-  hub_model_id: 0.5B-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
+  hub_model_id: 50M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
   hub_strategy: end
 task:
-  tokenizer_name: meta-llama/Meta-Llama-3-8B
+  tokenizer_name: meta-llama/Llama-2-7b
   sequence_length: 4096
   dataset:
     path: mlfoundations/dclm-baseline-1.0

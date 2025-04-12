@@ -28,19 +28,19 @@
     "optimizer": {
         "type": "AdamW",
         "params": {
-            "lr": "auto",
+            "lr": 0.004,
             "weight_decay": 0.1,
             "betas": [
                 0.9,
                 0.95
             ],
-            "eps": "auto"
+            "eps": 1e-15
         }
     },
-    "gradient_accumulation_steps": "auto",
-    "gradient_clipping": "auto",
+    "gradient_accumulation_steps": 1,
+    "gradient_clipping": 1.0,
     "steps_per_print": 2000,
-    "train_batch_size": "auto",
-    "train_micro_batch_size_per_gpu": "auto",
+    "train_batch_size": 8,
+    "train_micro_batch_size_per_gpu": 1,
     "wall_clock_breakdown": false
 }
