@@ -44,7 +44,7 @@ CONFIG_NAME=330m
 
 wandb login --relogin $WANDB_TOKEN
 huggingface-cli login --token $TRAIN_HF_TOKEN --add-to-git-credential
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7,8,9 torchrun -m --nnodes=1 --nproc_per_node=8 --master_port=29501 src.train \
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 --master_port=$PORT1 src.train \
     --config-path ../recipes/runs \
     --config-name $CONFIG_NAME \
     trainer.deepspeed=recipes/deepspeed/zero3.json \
