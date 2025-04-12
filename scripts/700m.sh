@@ -1,23 +1,57 @@
+#!/bin/bash
+set -euo pipefail
 set -x
+
+usage() {
+  echo "Usage: $0 --train-hf-token <TRAIN_HF_TOKEN> --push-hf-token <PUSH_HF_TOKEN> --wandb-token <WANDB_TOKEN>"
+  exit 1
+}
+
+TRAIN_HF_TOKEN=""
+PUSH_HF_TOKEN=""
+WANDB_TOKEN=""
+
+# Parse command-line options
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --train-hf-token)
+      TRAIN_HF_TOKEN="$2"
+      shift ;;
+    --push-hf-token)
+      PUSH_HF_TOKEN="$2"
+      shift ;;
+    --wandb-token)
+      WANDB_TOKEN="$2"
+      shift ;;
+    *) 
+      echo "Unknown parameter passed: $1"
+      usage ;;
+  esac
+  shift
+done
+
+if [[ -z "$TRAIN_HF_TOKEN" || -z "$PUSH_HF_TOKEN" || -z "$WANDB_TOKEN" ]]; then
+  echo "Missing one or more required parameters."
+  usage
+fi
+
 bash install.sh
 source pretrain-env/bin/activate
-export HF_TOKEN=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
-export WANDB_API_KEY=d61cd005c38e0e1e27d921c951303410316ac718
 export WANDB_PROJECT=pretrain-hub
 CHECKPOINT_PATH=checkpoints
 RUN_NAME=700M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
+CONFIG_NAME=700m
 
-wandb login --relogin $WANDB_API_KEY
-huggingface-cli login --token $HF_TOKEN
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 --master_port=$PORT1 src.train \
+wandb login --relogin $WANDB_TOKEN
+huggingface-cli login --token $TRAIN_HF_TOKEN --add-to-git-credential
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7,8,9 torchrun -m --nnodes=1 --nproc_per_node=8 --master_port=29501 src.train \
     --config-path ../recipes/runs \
-    --config-name 700m \
+    --config-name $CONFIG_NAME \
     trainer.deepspeed=recipes/deepspeed/zero3.json \
     trainer.output_dir="$CHECKPOINT_PATH/$RUN_NAME" \
     trainer.run_name="$RUN_NAME"
 
-export HF_TOKEN=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
-huggingface-cli login --token $HF_TOKEN --add-to-git-credential
+huggingface-cli login --token $PUSH_HF_TOKEN --add-to-git-credential
 for checkpoint in $CHECKPOINT_PATH/$RUN_NAME/*; do
     if [ -d "$checkpoint" ]; then
         if [ ! -f "${checkpoint}/pytorch_model.bin" ]; then
