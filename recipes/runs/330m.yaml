@@ -43,8 +43,7 @@ trainer:
   report_to: wandb
   run_name: 330M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
   resume_from_checkpoint: null
-  hub_model_id: 330M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
-  hub_strategy: end
+  gradient_checkpointing: true
 task:
   tokenizer_name: meta-llama/Llama-2-7b
   sequence_length: 4096
