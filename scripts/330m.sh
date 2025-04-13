@@ -35,8 +35,8 @@ if [[ -z "$TRAIN_HF_TOKEN" || -z "$PUSH_HF_TOKEN" || -z "$WANDB_TOKEN" ]]; then
   usage
 fi
 
-# bash install.sh
-# source pretrain-env/bin/activate
+bash install.sh
+source pretrain-env/bin/activate
 export WANDB_PROJECT=pretrain-hub
 CHECKPOINT_PATH=checkpoints
 RUN_NAME=330M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
@@ -44,7 +44,7 @@ CONFIG_NAME=330m
 
 wandb login --relogin $WANDB_TOKEN
 huggingface-cli login --token $TRAIN_HF_TOKEN --add-to-git-credential
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 --master_port=29900 src.train \
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 src.train \
     --config-path ../recipes/runs \
     --config-name $CONFIG_NAME \
     trainer.deepspeed=recipes/deepspeed/zero3.json \
