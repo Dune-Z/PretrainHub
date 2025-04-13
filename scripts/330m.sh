@@ -35,8 +35,8 @@ if [[ -z "$TRAIN_HF_TOKEN" || -z "$PUSH_HF_TOKEN" || -z "$WANDB_TOKEN" ]]; then
   usage
 fi
 
-bash install.sh
-source pretrain-env/bin/activate
+# bash install.sh
+# source pretrain-env/bin/activate
 export WANDB_PROJECT=pretrain-hub
 CHECKPOINT_PATH=checkpoints
 RUN_NAME=330M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096

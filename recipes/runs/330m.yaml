@@ -10,6 +10,7 @@ model:
   bos_token_id: 1
   eos_token_id: 2
   torch_dtype: bfloat16
+  use_cache: false
 optimizer:
   type: adamw_torch_fused
   learning_rate: 4e-3
