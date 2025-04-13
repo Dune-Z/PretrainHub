@@ -5,10 +5,14 @@ import transformers
 from typing import Tuple
 from collections import deque
 from omegaconf import DictConfig
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LambdaLR
 from datasets import load_dataset, IterableDataset
 from tokenizers.processors import TemplateProcessing
 from transformers import DataCollatorForLanguageModeling, AutoTokenizer, TrainingArguments, set_seed
 from transformers.models.llama.modeling_llama import LlamaConfig, LlamaForCausalLM
+from transformers import get_cosine_schedule_with_warmup, get_wsd_schedule
+from .optimizers.muon import Muon
 
 
 class TokenBuffer:
@@ -89,6 +93,46 @@ def dataset_provider(task_args, max_steps: int, seed: int) -> Tuple[IterableData
     )
     return dataset, tokenizer
 
+    
+def optimizer_provider(optim_args, model) -> Tuple[Optimizer, LambdaLR]:
+    if optim_args.type == "adamw":
+        optimizer = torch.optim.AdamW(
+            params=model.parameters(),
+            lr=optim_args.learning_rate,
+            betas=(optim_args.adam_beta1, optim_args.adam_beta2),
+            eps=optim_args.adam_epsilon,
+            weight_decay=optim_args.weight_decay,
+            fused="fused" in optim_args.optim,
+        )
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=optim_args.warmup_steps,
+            num_training_steps=optim_args.max_steps,
+        )
+    elif optim_args.type == "muon":
+        muon_params = [p for name, p in model.named_parameters() if p.dim() >= 2 and "embed_tokens" not in name and "lm_head" not in name]
+        adamw_params = [p for name, p in model.named_parameters() if p.dim() < 2 or "embed_tokens" in name or "lm_head" in name]
+        optimizer = Muon(
+            lr=optim_args.learning_rate,
+            wd=optim_args.weight_decay,
+            muon_params=muon_params,
+            momentum=optim_args.momentum,
+            adamw_params=adamw_params,
+            adamw_betas=(optim_args.adam_beta1, optim_args.adam_beta2),
+            adamw_eps=optim_args.adam_epsilon,
+        )
+        scheduler = get_wsd_schedule(
+            optimizer,
+            num_warmup_steps=optim_args.warmup_steps,
+            num_decay_steps=optim_args.max_steps,
+            num_training_steps=optim_args.max_steps,
+            decay_type=optim_args.decay_type,
+        )
+    else:
+        raise ValueError(f"Unsupported optimizer: {optim_args.optim}")
+    
+    return (optimizer, scheduler)
+
 
 @hydra.main(version_base="1.2.0")
 def train(cfg: DictConfig):
@@ -105,6 +149,7 @@ def train(cfg: DictConfig):
         args=TrainingArguments(**cfg.trainer),
         data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
         train_dataset=dataset,
+        optimizers=optimizer_provider(cfg.optimizer, model)
     )
 
     logger.info(f"STARTING TRAINING")
