@@ -22,8 +22,8 @@ optimizer:
   max_steps: 200000
 trainer:
   output_dir: checkpoints/330M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
-  per_device_train_batch_size: 32
-  gradient_accumulation_steps: 1
+  per_device_train_batch_size: 16
+  gradient_accumulation_steps: 2
   learning_rate: 4e-3
   weight_decay: 0.1
   adam_beta1: 0.9
