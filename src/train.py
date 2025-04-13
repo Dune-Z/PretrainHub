@@ -95,14 +95,14 @@ def dataset_provider(task_args, max_steps: int, seed: int) -> Tuple[IterableData
 
     
 def optimizer_provider(optim_args, model) -> Tuple[Optimizer, LambdaLR]:
-    if optim_args.type == "adamw":
+    if optim_args.type.startswith("adamw"):
         optimizer = torch.optim.AdamW(
             params=model.parameters(),
             lr=optim_args.learning_rate,
             betas=(optim_args.adam_beta1, optim_args.adam_beta2),
             eps=optim_args.adam_epsilon,
             weight_decay=optim_args.weight_decay,
-            fused="fused" in optim_args.optim,
+            fused="fused" in optim_args.type,
         )
         scheduler = get_cosine_schedule_with_warmup(
             optimizer,
