@@ -44,7 +44,7 @@ CONFIG_NAME=330m-muon
 
 wandb login --relogin $WANDB_TOKEN
 huggingface-cli login --token $TRAIN_HF_TOKEN --add-to-git-credential
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 --master_port=$PORT1 src.train \
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 --master_port=$PORT2 src.train \
     --config-path ../recipes/runs \
     --config-name $CONFIG_NAME \
     trainer.output_dir="$CHECKPOINT_PATH/$RUN_NAME" \
