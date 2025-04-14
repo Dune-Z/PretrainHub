@@ -12,7 +12,6 @@ from tokenizers.processors import TemplateProcessing
 from transformers import DataCollatorForLanguageModeling, AutoTokenizer, TrainingArguments, set_seed
 from transformers.models.llama.modeling_llama import LlamaConfig, LlamaForCausalLM
 from transformers import get_cosine_schedule_with_warmup, get_wsd_schedule
-from .optimizers.muon import Muon
 
 
 class TokenBuffer:
@@ -110,6 +109,7 @@ def optimizer_provider(optim_args, model) -> Tuple[Optimizer, LambdaLR]:
             num_training_steps=optim_args.max_steps,
         )
     elif optim_args.type == "muon":
+        from .optimizers.muon import Muon
         muon_params = [p for name, p in model.named_parameters() if p.dim() >= 2 and "embed_tokens" not in name and "lm_head" not in name]
         adamw_params = [p for name, p in model.named_parameters() if p.dim() < 2 or "embed_tokens" in name or "lm_head" in name]
         optimizer = Muon(

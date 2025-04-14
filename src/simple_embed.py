@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from torch.optim import AdamW
 from types import SimpleNamespace
-from train_embed import dataset_provider
+from train import dataset_provider
 from transformers import get_cosine_schedule_with_warmup
 from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.models.llama.modeling_llama import LlamaForCausalLM
@@ -19,7 +19,7 @@ def main(
     sequence_length: int = 2048,
     tokenizer_name: str = "meta-llama/Llama-2-7b-hf",
     dataset_name: str = "mlfoundations/dclm-baseline-1.0",
-    max_steps: int = 80000,
+    max_steps: int = 100000,
     batch_size: int = 32,
     learning_rate: float = 4e-3,
     weight_decay: float = 0.1,
@@ -27,6 +27,9 @@ def main(
     adam_beta2: float = 0.95,
     warmup_steps: int = 1000,
     seed: int = 42,
+    save_steps: int = 25000,
+    output_dir: str = "checkpoints/simple_embed",
+    resume_dir: str = None,
 ):
     task_args = {
         "tokenizer_name": tokenizer_name,
@@ -91,9 +94,29 @@ def main(
     progress_bar = tqdm(range(max_steps), desc="Training", unit="step")
     train_losses = []
     gradient_norms = []
-    for step, sample in enumerate(dataset.iter(batch_size)):
-        if step >= max_steps:
+    if resume_dir:
+        model = LlamaForCausalLM.from_pretrained(resume_dir)
+        state_dict = torch.load(f"{resume_dir}/training_state.pt")
+        optimizer.load_state_dict(state_dict["optimizer_state_dict"])
+        scheduler.load_state_dict(state_dict["scheduler_state_dict"])
+        start_step = state_dict["global_step"]
+        progress_bar.update(start_step)
+    else:
+        start_step = 0
+
+    for step, sample in enumerate(dataset.iter(batch_size), start=start_step):
+        step = step + 1
+        if step > max_steps:
             break
+        if step % save_steps == 0:
+            save_path = f"{output_dir}/step_{step}"
+            model.save_pretrained(save_path)
+            torch.save({
+                "optimizer_state_dict": optimizer.state_dict(),
+                "scheduler_state_dict": scheduler.state_dict(),
+                "global_step": step,
+            }, f"{save_path}/training_state.pt")
+
         input_ids = sample["input_ids"]
         input_ids = torch.tensor(input_ids).to('cuda')
         labels = input_ids.clone()
@@ -114,6 +137,8 @@ def main(
             "train/global_step": step,
         }
         wandb.log(data)
+
+    model.save_pretrained("checkpoints/simple_embed_final")
 
     wandb.finish()
     plt.figure(figsize=(12, 9))
