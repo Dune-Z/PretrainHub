@@ -62,13 +62,14 @@ for checkpoint in $CHECKPOINT_PATH/$RUN_NAME/*; do
                 ${checkpoint}
         fi
         echo "Pushing $checkpoint to hub"
+        checkpoint_name=$(basename "$checkpoint")
         python src/push_to_hub.py \
             --model_path $checkpoint \
-            --hub_model_id "YifeiZuo/$RUN_NAME"
+            --hub_model_id "YifeiZuo/${RUN_NAME}-${checkpoint_name}"
     fi
     python src/push_to_hub.py \
         --model_path "${CHECKPOINT_PATH}/${RUN_NAME}/wandb.zip" \
-        --hub_model_id "YifeiZuo/$RUN_NAME" \
+        --hub_model_id "YifeiZuo/${RUN_NAME}-${checkpoint_name}" \
         --wandb_logging
 done
 
