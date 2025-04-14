@@ -35,14 +35,15 @@ if [[ -z "$TRAIN_HF_TOKEN" || -z "$PUSH_HF_TOKEN" || -z "$WANDB_TOKEN" ]]; then
   usage
 fi
 
-# bash install.sh
-# source pretrain-env/bin/activate
+bash install.sh
+source pretrain-env/bin/activate
 export WANDB_PROJECT=pretrain-hub
 CHECKPOINT_PATH=checkpoints
 RUN_NAME=330M-AdamW-LR4e-3-WM1000-STEP200000-BZ256-SEQ4096
 CONFIG_NAME=330m
 
-wandb login --relogin $WANDB_TOKEN
+# wandb login --relogin $WANDB_TOKEN
+WANDB_MODE=offline
 huggingface-cli login --token $TRAIN_HF_TOKEN --add-to-git-credential
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 src.train \
     --config-path ../recipes/runs \
@@ -52,9 +53,11 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 s
     trainer.run_name="$RUN_NAME"
 
 huggingface-cli login --token $PUSH_HF_TOKEN --add-to-git-credential
+zip -r "${CHECKPOINT_PATH}/${RUN_NAME}/wandb" "${CHECKPOINT_PATH}/${RUN_NAME}/wandb"
+
 for checkpoint in $CHECKPOINT_PATH/$RUN_NAME/*; do
-    if [ -d "$checkpoint" ]; then
-        if [ ! -f "${checkpoint}/pytorch_model.bin" ]; then
+    if [ -d "$checkpoint" ] && [[ "$(basename "$checkpoint")" != "wandb" ]]; then
+        if [ ! -f "${checkpoint}/pytorch_model.bin" ] && [ ! -f "${checkpoint}/model.safetensors" ]; then
             echo "Converting $checkpoint to fp32"
             python "${checkpoint}/zero_to_fp32.py" \
                 ${checkpoint} \
@@ -65,4 +68,8 @@ for checkpoint in $CHECKPOINT_PATH/$RUN_NAME/*; do
             --model_path $checkpoint \
             --hub_model_id "YifeiZuo/$RUN_NAME"
     fi
+    python src/push_to_hub.py \
+        --model_path "${CHECKPOINT_PATH}/${RUN_NAME}/wandb.zip" \
+        --hub_model_id "YifeiZuo/$RUN_NAME" \
+        --wandb_logging
 done
