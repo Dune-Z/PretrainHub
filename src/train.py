@@ -1,5 +1,7 @@
+import time
 import torch
 import hydra
+import random
 import logging
 import transformers
 from typing import Tuple
@@ -56,15 +58,36 @@ def group_tokens_into_chunks(tokenized_data, sequence_length, token_buffer: Toke
 
 def model_provider(model_args, tokenizer: AutoTokenizer) -> LlamaForCausalLM:
     # model_args.vocab_size = tokenizer.vocab_size
-    model_args.bos_token_id = tokenizer.bos_token_id
-    model_args.eos_token_id = tokenizer.eos_token_id
-    config = LlamaConfig(**model_args)
-    model = LlamaForCausalLM(config)
+    # model_args.bos_token_id = tokenizer.bos_token_id
+    # model_args.eos_token_id = tokenizer.eos_token_id
+    # config = LlamaConfig(**model_args)
+    model = LlamaForCausalLM.from_pretrained(model_args.model_name_or_path, attn_implementation=model_args._attn_implementation)
+    for name, param in model.named_parameters():
+        if not "lm_head" in name:
+            param.requires_grad = False
+
+    vocab_size, hidden_size = model.lm_head.weight.shape
+    lm_head = torch.nn.Linear(hidden_size, vocab_size, bias=False)
+    model.lm_head = lm_head.to(torch.bfloat16)
     return model
 
     
+def safe_load_dataset(dataset_args, retries: int = 5, base_delay: float = 1.0, backoff_factor: float = 2.0, max_delay: float = 60.0):
+    for attempt in range(retries):
+        try:
+            return load_dataset(**dataset_args)
+        except Exception as e:
+            wait_time = min(base_delay * (backoff_factor ** attempt), max_delay)
+            jitter = random.uniform(0, 1)
+            total_wait_time = wait_time + jitter
+            print(f"Attempt {attempt + 1} failed: {e}. Retrying in {total_wait_time:.2f} seconds...")
+            time.sleep(total_wait_time)
+            
+    raise RuntimeError(f"Failed to load dataset after {retries} attempts. Please check your dataset configuration.")
+
+    
 def dataset_provider(task_args, max_steps: int, seed: int) -> Tuple[IterableDataset, AutoTokenizer]:
-    dataset: IterableDataset = load_dataset(**task_args.dataset) # by default, use streaming mode
+    dataset: IterableDataset = safe_load_dataset(task_args.dataset) # by default, use streaming mode
     tokenizer = AutoTokenizer.from_pretrained(task_args.tokenizer_name)
     bos = tokenizer.bos_token
     eos = tokenizer.eos_token
@@ -143,13 +166,14 @@ def train(cfg: DictConfig):
     model = model_provider(cfg.model, tokenizer)
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"TRAINABLE PARAMETERS: {trainable_params / 1e9:.4f}B")
-
+    optimizer, scheduler = optimizer_provider(cfg.optimizer, model)
+    logger.info(f"OPTIMIZER: {optimizer}")
     trainer = transformers.Trainer(
         model=model,
         args=TrainingArguments(**cfg.trainer),
         data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
         train_dataset=dataset,
-        optimizers=optimizer_provider(cfg.optimizer, model)
+        optimizers=(optimizer, scheduler)
     )
 
     logger.info(f"STARTING TRAINING")

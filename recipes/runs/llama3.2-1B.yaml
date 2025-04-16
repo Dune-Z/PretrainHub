@@ -1,0 +1,44 @@
+model:
+  model_name_or_path: meta-llama/Llama-3.2-1B
+  _attn_implementation: flash_attention_2
+  torch_dtype: bfloat16
+optimizer:
+  type: adamw_torch_fused
+  learning_rate: 1e-3
+  weight_decay: 0.1
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-15
+  warmup_steps: 0
+  max_steps: 2000
+trainer:
+  output_dir: checkpoints/llama3.2-1B-AdamW-LR4e-3-WM0-STEP200000-BZ256-SEQ4096
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 8
+  learning_rate: 1e-3
+  weight_decay: 0.1
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-15
+  num_train_epochs: 1
+  max_steps: 2000
+  lr_scheduler_type: cosine_with_min_lr
+  lr_scheduler_kwargs:
+    min_lr: 0
+  warmup_steps: 100
+  logging_steps: 1
+  save_steps: 1000
+  seed: 42
+  bf16: true
+  report_to: wandb
+  run_name: llama3.2-1B-AdamW-LR4e-3-WM0-STEP200000-BZ256-SEQ4096
+  deepspeed: ds_config.json
+  resume_from_checkpoint: null
+task:
+  tokenizer_name: meta-llama/Llama-3.2-1B
+  sequence_length: 2048
+  dataset:
+    path: allenai/c4
+    split: train
+    name: en
+    streaming: true
