@@ -43,12 +43,12 @@ CONFIG_NAME=debug_muon
 # wandb login --relogin $WANDB_TOKEN
 export WANDB_MODE=offline
 export WANDB_DIR="$CHECKPOINT_PATH/$RUN_NAME/"
-# huggingface-cli login --token $TRAIN_HF_TOKEN --add-to-git-credential
-# CUDA_VISIBLE_DEVICES=6,7,8,9 torchrun -m --nnodes=1 --nproc_per_node=4 --master_port=29502 src.train \
-#     --config-path ../recipes/runs \
-#     --config-name $CONFIG_NAME \
-#     trainer.output_dir="$CHECKPOINT_PATH/$RUN_NAME" \
-#     trainer.run_name="$RUN_NAME"
+huggingface-cli login --token $TRAIN_HF_TOKEN --add-to-git-credential
+CUDA_VISIBLE_DEVICES=6,7,8,9 torchrun -m --nnodes=1 --nproc_per_node=4 --master_port=29502 src.train \
+    --config-path ../recipes/runs \
+    --config-name $CONFIG_NAME \
+    trainer.output_dir="$CHECKPOINT_PATH/$RUN_NAME" \
+    trainer.run_name="$RUN_NAME"
 
 huggingface-cli login --token $PUSH_HF_TOKEN --add-to-git-credential
 zip -r "${CHECKPOINT_PATH}/${RUN_NAME}/wandb" "${CHECKPOINT_PATH}/${RUN_NAME}/wandb"

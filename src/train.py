@@ -1,5 +1,7 @@
+import time
 import torch
 import hydra
+import random
 import logging
 import transformers
 from typing import Tuple
@@ -63,9 +65,23 @@ def model_provider(model_args, tokenizer: AutoTokenizer) -> LlamaForCausalLM:
     model = LlamaForCausalLM(config)
     return model
 
+
+def safe_load_dataset(dataset_args, retries: int = 5, base_delay: float = 1.0, backoff_factor: float = 2.0, max_delay: float = 60.0):
+    for attempt in range(retries):
+        try:
+            return load_dataset(**dataset_args)
+        except Exception as e:
+            wait_time = min(base_delay * (backoff_factor ** attempt), max_delay)
+            jitter = random.uniform(0, 1)
+            total_wait_time = wait_time + jitter
+            print(f"Attempt {attempt + 1} failed: {e}. Retrying in {total_wait_time:.2f} seconds...")
+            time.sleep(total_wait_time)
+            
+        raise RuntimeError(f"Failed to load dataset after {retries} attempts. Please check your dataset configuration.")
+
     
 def dataset_provider(task_args, max_steps: int, seed: int) -> Tuple[IterableDataset, AutoTokenizer]:
-    dataset: IterableDataset = load_dataset(**task_args.dataset) # by default, use streaming mode
+    dataset: IterableDataset = safe_load_dataset(task_args.dataset) # by default, use streaming mode
     tokenizer = AutoTokenizer.from_pretrained(task_args.tokenizer_name)
     bos = tokenizer.bos_token
     eos = tokenizer.eos_token
