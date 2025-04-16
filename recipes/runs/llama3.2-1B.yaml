@@ -4,30 +4,30 @@ model:
   torch_dtype: bfloat16
 optimizer:
   type: adamw_torch_fused
-  learning_rate: 1e-3
+  learning_rate: 8e-4
   weight_decay: 0.1
   adam_beta1: 0.9
   adam_beta2: 0.95
   adam_epsilon: 1e-15
-  warmup_steps: 0
-  max_steps: 2000
+  warmup_steps: 50
+  max_steps: 1000
 trainer:
   output_dir: checkpoints/llama3.2-1B-AdamW-LR4e-3-WM0-STEP200000-BZ256-SEQ4096
-  per_device_train_batch_size: 4
-  gradient_accumulation_steps: 8
-  learning_rate: 1e-3
+  per_device_train_batch_size: 16
+  gradient_accumulation_steps: 2
+  learning_rate: 8e-4
   weight_decay: 0.1
   adam_beta1: 0.9
   adam_beta2: 0.95
   adam_epsilon: 1e-15
   num_train_epochs: 1
-  max_steps: 2000
+  max_steps: 1000
   lr_scheduler_type: cosine_with_min_lr
   lr_scheduler_kwargs:
     min_lr: 0
-  warmup_steps: 100
+  warmup_steps: 50
   logging_steps: 1
-  save_steps: 1000
+  save_steps: 250
   seed: 42
   bf16: true
   report_to: wandb
@@ -36,7 +36,7 @@ trainer:
   resume_from_checkpoint: null
 task:
   tokenizer_name: meta-llama/Llama-3.2-1B
-  sequence_length: 2048
+  sequence_length: 4096
   dataset:
     path: allenai/c4
     split: train

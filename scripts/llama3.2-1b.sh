@@ -35,8 +35,8 @@ if [[ -z "$TRAIN_HF_TOKEN" || -z "$PUSH_HF_TOKEN" || -z "$WANDB_TOKEN" ]]; then
   usage
 fi
 
-# bash install.sh
-# source pretrain-env/bin/activate
+bash install.sh
+source pretrain-env/bin/activate
 export WANDB_PROJECT=pretrain-hub
 CHECKPOINT_PATH=checkpoints
 RUN_NAME=llama3.2-1B-AdamW-LR4e-3-WM0-STEP200000-BZ256-SEQ4096
@@ -51,18 +51,18 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun -m --nnodes=1 --nproc_per_node=8 s
     trainer.output_dir="$CHECKPOINT_PATH/$RUN_NAME" \
     trainer.run_name="$RUN_NAME"
 
-# huggingface-cli login --token $PUSH_HF_TOKEN --add-to-git-credential
-# for checkpoint in $CHECKPOINT_PATH/$RUN_NAME/*; do
-#     if [ -d "$checkpoint" ]; then
-#         if [ ! -f "${checkpoint}/pytorch_model.bin" ]; then
-#             echo "Converting $checkpoint to fp32"
-#             python "${checkpoint}/zero_to_fp32.py" \
-#                 ${checkpoint} \
-#                 ${checkpoint}
-#         fi
-#         echo "Pushing $checkpoint to hub"
-#         python src/push_to_hub.py \
-#             --model_path $checkpoint \
-#             --hub_model_id "YifeiZuo/$RUN_NAME"
-#     fi
-# done
+huggingface-cli login --token $PUSH_HF_TOKEN --add-to-git-credential
+for checkpoint in $CHECKPOINT_PATH/$RUN_NAME/*; do
+    if [ -d "$checkpoint" ]; then
+        if [ ! -f "${checkpoint}/pytorch_model.bin" ]; then
+            echo "Converting $checkpoint to fp32"
+            python "${checkpoint}/zero_to_fp32.py" \
+                ${checkpoint} \
+                ${checkpoint}
+        fi
+        echo "Pushing $checkpoint to hub"
+        python src/push_to_hub.py \
+            --model_path $checkpoint \
+            --hub_model_id "YifeiZuo/$RUN_NAME"
+    fi
+done
