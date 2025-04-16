@@ -77,7 +77,7 @@ def safe_load_dataset(dataset_args, retries: int = 5, base_delay: float = 1.0, b
             print(f"Attempt {attempt + 1} failed: {e}. Retrying in {total_wait_time:.2f} seconds...")
             time.sleep(total_wait_time)
             
-        raise RuntimeError(f"Failed to load dataset after {retries} attempts. Please check your dataset configuration.")
+    raise RuntimeError(f"Failed to load dataset after {retries} attempts. Please check your dataset configuration.")
 
     
 def dataset_provider(task_args, max_steps: int, seed: int) -> Tuple[IterableDataset, AutoTokenizer]:
